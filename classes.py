@@ -1,4 +1,6 @@
 # Love Letter
+# By : Simon Giard-Leroux, P.Eng.
+# 2021
 
 from random import shuffle
 
@@ -6,34 +8,33 @@ class Players:
     def __init__(self):
         self.list = []
 
-        nPlayers = 2  # int(input('Veuillez entrer le nombre de joueurs (2-4) : '))
+        nPlayers = 4  # int(input('Veuillez entrer le nombre de joueurs (2-4) : '))
 
         for i in range(nPlayers):
-            self.list.append(Player(i + 1, f'Joueur {i + 1}'))  # input(f'Nom joueur {i + 1} : ')))
-
-    def resetProtected(self):
-        for player in self.list:
-            player.protected = False
+            self.list.append(Player(f'Joueur {i + 1}'))  # input(f'Nom joueur {i + 1} : ')))
 
     def choosePlayer(self, player, includeSelf):
         print('\nJoueurs :')
 
         otherplayersIDs = []
 
+        i = 1
+
         for player2 in self.list:
             if player2 != player or includeSelf:
-                print(f'{player2.id} : {player2.name}')
-                otherplayersIDs.append(player2.id)
+                print(f'{i} : {player2.name}')
+                otherplayersIDs.append(i)
+            i += 1
 
         while True:
-            chosenPlayerID = int(input('-> Quel joueur voulez-vous désigner? '))
+            chosenPlayerID = int(input('\n-> Quel joueur voulez-vous désigner? '))
 
             if chosenPlayerID in otherplayersIDs:
                 chosenPlayer = self.list[chosenPlayerID - 1]
 
                 if chosenPlayer.protected:
                     if input('\nCe joueur est protégé par la carte Handmaid!\n' +
-                          'Voulez-vous gaspiller la carte? (o/n)') == 'o':
+                          '\nVoulez-vous gaspiller la carte? (o/n)') == 'o':
                         # to prevent loop if all other players are protected
                         chosenPlayer = None
                         break
@@ -42,18 +43,24 @@ class Players:
 
         return chosenPlayer
 
-class Player:
-    def __init__(self, id, name):
-        self.id = id
-        self.name = name
+    def removePlayer(self, player):
+        print(f'\n{player.name} est éliminé de la partie!')
+        self.list.remove(player)
 
+class Player:
+    def __init__(self, name):
+        self.name = name
         self.deck = []
         self.discardDeck = []
         self.protected = False
 
-    def draw(self, card):
-        # card.id = len(self.deck) + 1
+    def draw(self, card, explicit):
         self.deck.append(card)
+
+        if explicit:
+            print(f'\nVous avez pigé une carte {card.char}!')
+
+        return card.char
 
     def __str__(self):
         chars = []
@@ -67,7 +74,10 @@ class Player:
         return f'{chars}'
 
     def discard(self, index):
-        self.discardDeck.append(self.deck.pop(index))
+        discaredCard = self.deck.pop(index)
+        self.discardDeck.append(discaredCard)
+
+        return discaredCard
 
     def getDeckCardsChars(self):
         chars = []
@@ -76,6 +86,11 @@ class Player:
             chars.append(card.char)
 
         return chars
+
+    def give(self, index, otherPlayer):
+        card = self.deck.pop(index)
+        otherPlayer.deck.append(card)
+        print(f'\n{self.name} a donné une carte {card.char} à {otherPlayer.name}!')
 
 class Card:
     def __init__(self, char, strength):
@@ -109,15 +124,3 @@ class Deck:
         
     def __len__(self):
         return len(self.deck)
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    

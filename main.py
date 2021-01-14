@@ -1,4 +1,6 @@
 # Love Letter
+# By : Simon Giard-Leroux, P.Eng.
+# 2021
 
 from classes import Deck, Players
 
@@ -14,132 +16,158 @@ if __name__ == '__main__':
     
     # Initial draw for each player
     for player in players.list:
-        player.draw(deck.deal())
+        print('-' * 40)
+        print(f'{player.name} :')
+        player.draw(deck.deal(), explicit=True)
     
     # One card is discarded in the beginning
     discard = deck.deal()
-    
-    # Initialize to first turn
-    turn = 1
-            
+
     while len(deck) > 0 and len(players.list) > 1:
-        print(f'\n----- Tour {turn} -----')
+        for player in list(players.list): # list() to copy list so you can delete active player in loop
+            print('-' * 40)
+            print(f'{player.name} :')
 
-        players.resetProtected()
+            if player.protected:
+                player.protected = False
+                print("\nVous n'êtes plus protégé(e) par la carte Handmaid!")
 
-        for player in players.list:
-            player.draw(deck.deal())
-            
-            print(f'\nMain de {player.name} : {player}')
+            firstCard = player.deck[0]
+            secondCard = player.draw(deck.deal(), explicit=True)
 
-            while True:
-                choice = int(input('-> Quelle carte voulez-vous jouer? '))
+            if firstCard == 'Countess' and (secondCard == 'King' or secondCard == 'Prince'):
+                print('\nVous avez à la fois une carte Countess et une carte King ou Prince!')
+                print('\nVous avez jeté votre carte Countess!')
+                player.discard(0)
 
-                if choice == 1 or choice == 2:# player.getDeckCardsIDs():
-                    break
+            elif secondCard == 'Countess' and (firstCard == 'King' or firstCard == 'Prince'):
+                print('\nVous avez à la fois une carte Countess et une carte King ou Prince!')
+                print('\nVous avez jeté votre carte Countess!')
+                player.discard(1)
 
-            card = player.deck[choice - 1]
+            else:
+                print(f'\nVotre main : {player}')
 
-            if card.char == 'Guard':
-                chosenPlayer = players.choosePlayer(player, includeSelf=False)
+                while True:
+                    choice = int(input('\n-> Quelle carte voulez-vous jouer? '))
 
-                if chosenPlayer != None:
-                    #  Guard cannot be named as the type of card.
-                    chars = ['Priest', 'Baron', 'Handmaid',
-                             'Prince', 'King', 'Countess', 'Princess']
+                    if choice == 1 or choice == 2:# player.getDeckCardsIDs():
+                        break
 
-                    i = 1
+                card = player.deck[choice - 1]
 
-                    charIDs = []
+                if card.char == 'Guard':
+                    chosenPlayer = players.choosePlayer(player, includeSelf=False)
 
-                    print('\nChoix de cartes :')
+                    if chosenPlayer != None:
+                        #  Guard cannot be named as the type of card.
+                        chars = ['Priest', 'Baron', 'Handmaid',
+                                 'Prince', 'King', 'Countess', 'Princess']
 
-                    for char in chars:
-                        print(f'{i} : {char}')
-                        charIDs.append(i)
-                        i += 1
+                        i = 1
 
-                    while True:
-                        chosenCharID = int(input('-> Quelle carte voulez-vous nommer? '))
+                        charIDs = []
 
-                        if chosenCharID in charIDs:
-                            chosenChar = chars[chosenCharID - 1]
-                            break
+                        print('\nChoix de cartes :')
 
-                    if chosenChar in chosenPlayer.getDeckCardsChars():
-                        print(f'\nVous avez réussi à deviner la carte de {chosenPlayer.name}.')
-                        players.list.remove(chosenPlayer)
+                        for char in chars:
+                            print(f'{i} : {char}')
+                            charIDs.append(i)
+                            i += 1
+
+                        while True:
+                            chosenCharID = int(input('\n-> Quelle carte voulez-vous nommer? '))
+
+                            if chosenCharID in charIDs:
+                                chosenChar = chars[chosenCharID - 1]
+                                break
+
+                        if chosenChar in chosenPlayer.getDeckCardsChars():
+                            print(f'\nVous avez réussi à deviner la carte de {chosenPlayer.name}.')
+                            players.removePlayer(chosenPlayer)
+                        else:
+                            print(f'\nVous avez échoué à deviner la carte de {chosenPlayer.name}.')
+
+                elif card.char == 'Priest':
+                    chosenPlayer = players.choosePlayer(player, includeSelf=False)
+
+                    if chosenPlayer != None:
+                        print(f'\nCarte de {chosenPlayer.name} : {chosenPlayer}')
+
+                elif card.char == 'Baron':
+                    chosenPlayer = players.choosePlayer(player, includeSelf=False)
+
+                    if chosenPlayer != None:
+                        chosenPlayerCard = chosenPlayer.deck[0]
+
+                        if choice == 1:
+                            playerCard = player.deck[1]
+                        elif choice == 2:
+                            playerCard = player.deck[0]
+
+                        if playerCard.strength > chosenPlayerCard.strength:
+                            print(f'\nLa carte {playerCard.char} ({playerCard.strength}) ' +
+                                  f'de {player.name} bat la carte {chosenPlayerCard.char} ' +
+                                  f'({chosenPlayerCard.strength}) de {chosenPlayer.name}!\n')
+                            players.removePlayer(chosenPlayer)
+
+                        elif chosenPlayerCard.strength > playerCard.strength:
+                            print(f'\nLa carte {chosenPlayerCard.char} ({chosenPlayerCard.strength}) ' +
+                                  f'de {chosenPlayer.name} bat la carte {playerCard.char} ' +
+                                  f'({playerCard.strength}) de {player.name}!\n')
+                            players.removePlayer(player)
+
+                        else:
+                            print(f'\nLa carte {playerCard.char} ({playerCard.strength}) ' +
+                                  f'de {player.name} est identique à la carte {chosenPlayerCard.char} ' +
+                                  f'({chosenPlayerCard.strength}) de {chosenPlayer.name}!\n\n' +
+                                  f"Personne n'est éliminé de la partie!")
+
+                elif card.char == 'Handmaid':
+                    print('\nVous êtes protégé(e) pour le reste du tour!')
+                    player.protected = True
+
+                elif card.char == 'Prince':
+                    chosenPlayer = players.choosePlayer(player, includeSelf=True)
+
+                    if chosenPlayer == player:
+                        if choice == 1:
+                            discardedCard = chosenPlayer.discard(1)
+                        elif choice == 2:
+                            discardedCard = chosenPlayer.discard(0)
                     else:
-                        print(f'\nVous avez échoué à deviner la carte de {chosenPlayer.name}.')
+                        discardedCard = chosenPlayer.discard(0)
 
-            elif card.char == 'Priest':
-                chosenPlayer = players.choosePlayer(player, includeSelf=False)
+                    print(f'\n{chosenPlayer.name} a jeté une carte {discardedCard.char}!')
 
-                if chosenPlayer != None:
-                    print(f'\nCarte de {chosenPlayer.name} : {chosenPlayer}')
+                    drawnCard = chosenPlayer.draw(deck.deal(), explicit=False)
 
-            elif card.char == 'Baron':
-                chosenPlayer = players.choosePlayer(player, includeSelf=False)
+                    print(f'\n{chosenPlayer.name} a pigé une carte {drawnCard}!')
 
-                if chosenPlayer != None:
-                    chosenPlayerCard = chosenPlayer.deck[0]
+                elif card.char == 'King':
+                    chosenPlayer = players.choosePlayer(player, includeSelf=False)
 
-                    if choice == 1:
-                        playerCard = player.deck[1]
-                    elif choice == 2:
-                        playerCard = player.deck[0]
+                    if chosenPlayer != None:
+                        if choice == 1:
+                            index = 1
+                        elif choice == 2:
+                            index = 0
 
-                    if playerCard.strength > chosenPlayerCard.strength:
-                        print(f'\nLa carte {playerCard.char} ({playerCard.strength}) ' +
-                              f'de {player.name} bat la carte {chosenPlayerCard.char} ' +
-                              f'({chosenPlayerCard.strength}) de {chosenPlayer.name}!\n\n' +
-                              f'{chosenPlayer.name} est éliminé de la partie!')
-                        players.list.remove(chosenPlayer)
-                    elif chosenPlayerCard.strength > playerCard.strength:
-                        print(f'\nLa carte {chosenPlayerCard.char} ({chosenPlayerCard.strength}) ' +
-                              f'de {chosenPlayer.name} bat la carte {playerCard.char} ' +
-                              f'({playerCard.strength}) de {player.name}!\n\n' +
-                              f'{player.name} est éliminé de la partie!')
-                        players.list.remove(player)
-                    else:
-                        print(f'\nLa carte {playerCard.char} ({playerCard.strength}) ' +
-                              f'de {player.name} est identique à la carte {chosenPlayerCard.char} ' +
-                              f'({chosenPlayerCard.strength}) de {chosenPlayer.name}!\n\n' +
-                              f"Personne n'est éliminé de la partie!")
+                    player.give(index, chosenPlayer)
+                    chosenPlayer.give(0, player)
 
-            elif card.char == 'Handmaid':
-                print('\nVous êtes protégé(e) pour le reste du tour!')
-                player.protected = True
-                            
-            # elif card.char == 'Prince':
-                
-                                    
-            # elif card.char == 'King':
-                
-                                    
-            # elif card.char == 'Countess':
-                
-                                    
-            # elif card.char == 'Princess':
-            
-            player.discard(choice - 1)
-                 
-        
-        
-        
-        
-        
-        
-        
+                # elif card.char == 'Countess':
+                    # nothing happens, Countess effect is only at draw
+
+                elif card.char == 'Princess':
+                    players.removePlayer(player)
+
+                player.discard(choice - 1)
+
             if len(deck) == 0 or len(players.list) == 1:
                 break
-            
-        turn += 1
-            
-    print(f'\n==== Fin de la partie! Le gagnant est : {player.name}!====')
 
-    
+    print(f'\n==== Fin de la partie! Le gagnant est : {player.name}!====')
 
         # if input('Voulez-vous jouer une autre partie? (o/n) : ') != 'o':
         #     break
-
